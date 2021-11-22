@@ -16,7 +16,7 @@
   },
   "name": "@campfhir/mapper",
   "version": "1.0.1",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "nyc mocha",
     "prepare": "./node_modules/.bin/tsc -p tsconfig.json"

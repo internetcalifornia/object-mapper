@@ -1,0 +1,11 @@
+src
+node_modules
+tests
+spec
+coverage
+.vscode
+.nyc_output
+.mocharc.json
+tsconfig.json
+.mocharc.yaml
+*.tgz
