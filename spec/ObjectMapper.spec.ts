@@ -30,7 +30,8 @@ describe("Given an object and a mapping definition", () => {
       };
       const data = {};
       const output = await ObjectMapper.map(data, def);
-      JSON.stringify(output).should.equal(JSON.stringify(expected));
+      output.help.should.be.true;
+      output.isOk.should.equal("2");
     }).slow(9000);
   });
 });
@@ -103,12 +104,8 @@ describe("Given an object and a mapping definition where key is not defined corr
       const data = {};
       let res = await ObjectMapper.map(data, def, { strict: false });
 
-      JSON.stringify(res).should.equal(
-        JSON.stringify({
-          help: true,
-          isOk: "2",
-        })
-      );
+      res.help.should.be.true;
+      res.isOk.should.equal("2");
     }).slow(9000);
   });
 });
@@ -199,7 +196,7 @@ describe("Given a object definition THAT fails and data", () => {
               },
             },
             firstName: {
-              asyncMap: (person) => {
+              asyncMap: async (person) => {
                 throw new Error("Fail 2");
               },
             },

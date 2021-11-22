@@ -1,5 +1,5 @@
 import { debug } from "debug";
-import type { MappingDefinition } from "../typings";
+import type { asyncMap, MappingDefinition, syncMap } from "../typings";
 export type { MappingDefinition } from "../typings";
 
 const log = debug("ObjectMapper");
@@ -14,19 +14,21 @@ export abstract class ObjectMapper {
       try {
         const strict = options?.strict ?? true;
         const mappedObject: any = {};
-        const asyncKeys: string[] = [];
+        const promises: [key: string, promise: Promise<any>][] = [];
         for (let [key, value] of Object.entries(definition) as [
           key: string,
           value: any
         ]) {
-          if (typeof value.asyncMap === "function") {
-            asyncKeys.push(key);
-            const res = value.asyncMap(data);
-            mappedObject[key] = res;
+          const mapObject = value as
+            | { map: syncMap<any, typeof data>; asyncMap?: never }
+            | { map?: never; asyncMap: asyncMap<any, typeof data> };
+          if (typeof mapObject.asyncMap === "function") {
+            const res = mapObject.asyncMap(data);
+            promises.push([key, res]);
             log("%s => ASYNC %O", key, res);
             continue;
-          } else if (typeof value.map === "function") {
-            const res = value.map(data);
+          } else if (typeof mapObject.map === "function") {
+            const res = mapObject.map(data);
             mappedObject[key] = res;
             log("%s => %O", res);
             continue;
@@ -40,9 +42,9 @@ export abstract class ObjectMapper {
             continue;
           }
         }
-        for (let key of asyncKeys) {
+        for (let [key, promise] of promises) {
           log("%s is being resolved", key);
-          const res = await mappedObject[key];
+          const res = await promise;
           mappedObject[key] = res;
           log("%s => %O", res);
         }
