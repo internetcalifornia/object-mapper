@@ -43,10 +43,15 @@ export abstract class ObjectMapper {
           }
         }
         for (let [key, promise] of promises) {
-          log("%s is being resolved", key);
-          const res = await promise;
-          mappedObject[key] = res;
-          log("%s => %O", res);
+          try {
+            log("%s is being resolved", key);
+            const res = await promise;
+            mappedObject[key] = res;
+            log("%s => %O", res);
+            continue;
+          } catch (err) {
+            return reject(err);
+          }
         }
         return resolve(mappedObject);
       } catch (err) {
