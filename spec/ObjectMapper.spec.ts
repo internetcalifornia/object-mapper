@@ -43,12 +43,18 @@ describe("Given an object and a mapping definition where promise is rejected", (
         return new Promise((_, reject) => {
           setTimeout(() => {
             reject(new Error("Bad request"));
-          }, 300);
+          }, 1700);
         });
       },
     },
     isOk: {
-      map: (data) => "2",
+      asyncMap: (data) => {
+        return new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error("Bad request"));
+          }, 1000);
+        });
+      },
     },
   };
 
@@ -79,7 +85,6 @@ describe("Given an object and a mapping definition where key is not defined corr
       const data = {};
       ObjectMapper.map(data, def)
         .should.eventually.be.rejectedWith(
-          Error,
           "badIdea does not have a defined mapping function. To fix set options.strict = false or define map or asyncMap function for it."
         )
         .notify(done);
