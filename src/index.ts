@@ -1,5 +1,6 @@
 import { debug } from "debug";
-import { MappingDefinition, MappingFunc } from "../typings";
+import type { MappingDefinition } from "../typings";
+export type { MappingDefinition } from "../typings";
 
 const log = debug("ObjectMapper");
 
