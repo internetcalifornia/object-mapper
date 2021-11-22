@@ -1,0 +1,7 @@
+spec:
+  - "spec/**/*.spec.ts"
+ui: "bdd"
+check-leaks: true
+require:
+  - "ts-node/register"
+recursive: true
