@@ -15,7 +15,7 @@
     "debug": "^4.3.2"
   },
   "name": "@campfhir/mapper",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "main": "lib/index.js",
   "scripts": {
     "test": "nyc mocha",
