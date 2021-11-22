@@ -199,7 +199,9 @@ describe("Given a object definition THAT fails and data", () => {
               },
             },
             firstName: {
-              map: (person) => person.first_name,
+              asyncMap: (person) => {
+                throw new Error("Fail 2");
+              },
             },
             lastName: {
               map: (person) => person.last_name,

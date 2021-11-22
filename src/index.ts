@@ -42,7 +42,7 @@ export abstract class ObjectMapper {
         }
         for (let key of asyncKeys) {
           log("%s is being resolved", key);
-          const res = await Promise.resolve(mappedObject[key]);
+          const res = await mappedObject[key];
           mappedObject[key] = res;
           log("%s => %O", res);
         }
