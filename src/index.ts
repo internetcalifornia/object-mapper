@@ -3,6 +3,8 @@ import type { asyncMap, MappingDefinition, syncMap } from "../typings";
 export type { MappingDefinition } from "../typings";
 
 const log = debug("ObjectMapper");
+const errLog = log.extend("error");
+const warnLog = log.extend("warn");
 
 export abstract class ObjectMapper {
   static async map<T extends object, P = any>(
@@ -34,11 +36,11 @@ export abstract class ObjectMapper {
             continue;
           } else {
             if (strict) {
-              throw new Error(
-                `${key} does not have a defined mapping function. To fix set options.strict = false or define map or asyncMap function for it.`
-              );
+              const errMsg = `${key} does not have a defined mapping function. To fix set options.strict = false or define map or asyncMap function for it.`;
+              errLog(errMsg);
+              throw new Error(errMsg);
             }
-            console.warn("Key %s does not have a mapping function", key);
+            warnLog("Key %s does not have a mapping function", key);
             continue;
           }
         }
@@ -50,11 +52,14 @@ export abstract class ObjectMapper {
             log("%s => %O", res);
             continue;
           } catch (err) {
+            errLog("Awaiting promise throw an error %O", err);
             return reject(err);
           }
         }
+        log("Resolved mapped object");
         return resolve(mappedObject);
       } catch (err) {
+        errLog("Mapping rejected %O", err);
         return reject(err);
       }
     });
