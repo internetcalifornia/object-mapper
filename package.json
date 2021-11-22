@@ -14,13 +14,13 @@
     "chai-as-promised": "^7.1.1",
     "debug": "^4.3.2"
   },
-  "name": "@campfhir/object-mapper",
-  "version": "2.0.0",
+  "name": "@campfhir/mapper",
+  "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "test": "nyc mocha"
   },
   "author": "Scott Eremia-Roden",
   "license": "ISC",
-  "description": ""
+  "description": "A simple mapper to create new instances of objects from data using a declarative syntax."
 }
