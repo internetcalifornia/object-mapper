@@ -18,7 +18,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "nyc mocha"
+    "test": "nyc mocha",
+    "prepare": "./node_modules/.bin/tsc -p tsconfig.json"
   },
   "author": "Scott Eremia-Roden",
   "license": "ISC",
