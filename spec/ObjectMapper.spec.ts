@@ -165,3 +165,52 @@ describe("Given a object definition and data", () => {
     });
   });
 });
+
+describe("Given a object definition THAT fails and data", () => {
+  describe("When called", () => {
+    it("Should catch error", async () => {
+      type Person = {
+        firstName: string;
+        lastName: string;
+        ageInYears: number;
+        dateOfBirth: Date;
+      };
+      type Person_Database_Record = {
+        first_name: string;
+        last_name: string;
+        date_of_birth: string;
+      };
+
+      const personRecord: Person_Database_Record = {
+        first_name: "John",
+        last_name: "Doe",
+        date_of_birth: "2021-01-01",
+      };
+      try {
+        let person = await ObjectMapper.map<Person, Person_Database_Record>(
+          personRecord,
+          {
+            dateOfBirth: {
+              map: (person) => new Date(person.date_of_birth),
+            },
+            ageInYears: {
+              asyncMap: (person) => {
+                throw new Error("Fail");
+              },
+            },
+            firstName: {
+              map: (person) => person.first_name,
+            },
+            lastName: {
+              map: (person) => person.last_name,
+            },
+          }
+        );
+      } catch (error) {
+        let err = error as Error;
+        if (err.message === "Fail") return;
+        throw err;
+      }
+    });
+  });
+});
