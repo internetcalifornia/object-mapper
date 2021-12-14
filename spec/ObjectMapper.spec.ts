@@ -1,13 +1,16 @@
 import "mocha";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { MappingDefinition } from "../typings";
+import { MappingDefinition, MappingDefinitionSync } from "../typings";
 import ObjectMapper from "../src";
 chai.use(chaiAsPromised);
 chai.should();
 
 describe("Given an object and a mapping definition", () => {
-  const def: MappingDefinition<{ help: boolean; isOk: "1" | "2" }, {}> = {
+  const def: MappingDefinition<
+    { help: boolean; isOk: "1" | "2"; default: "yes" },
+    {}
+  > = {
     help: {
       asyncMap: (data) => {
         return new Promise((resolve, _) => {
@@ -20,6 +23,7 @@ describe("Given an object and a mapping definition", () => {
     isOk: {
       map: (data) => "2",
     },
+    default: () => "yes",
   };
 
   describe("When mapping function called", () => {
@@ -32,6 +36,7 @@ describe("Given an object and a mapping definition", () => {
       const output = await ObjectMapper.map(data, def);
       output.help.should.be.true;
       output.isOk.should.equal("2");
+      output.default.should.equal("yes");
     }).slow(9000);
   });
 });
@@ -215,6 +220,42 @@ describe("Given a object definition THAT fails and data", () => {
         if (err.message === "Fail") return;
         throw err;
       }
+    });
+  });
+});
+
+describe("Given a definition and data", () => {
+  const data = { something: true, other: 4 };
+  const def: MappingDefinitionSync<
+    { flag: number; isSomething: boolean },
+    typeof data
+  > = {
+    flag: (d) => (d.other ? 1 : 0),
+    isSomething: (d) => (d.something ? false : true),
+  };
+  describe("When using synchronous mapping", () => {
+    it("Should return a object that fits the definition", () => {
+      const output = ObjectMapper.map(data, def, { synchronous: true });
+      output.flag.should.be.equal(1);
+      output.isSomething.should.be.false;
+    });
+  });
+});
+
+describe("Given a definition and data", () => {
+  const data = { something: true, other: 4 };
+  const def: MappingDefinitionSync<
+    { flag: number; isSomething: boolean },
+    typeof data
+  > = {
+    flag: (d) => (d.other ? 1 : 0),
+    isSomething: (d) => (d.something ? false : true),
+  };
+  describe("When using synchronous mapping", () => {
+    it("Should return a object that fits the definition", () => {
+      const output = ObjectMapper.map(data, def, { synchronous: true });
+      output.flag.should.be.equal(1);
+      output.isSomething.should.be.false;
     });
   });
 });
