@@ -18,6 +18,7 @@ type Person = {
   lastName: string;
   ageInYears: number;
   dateOfBirth: Date;
+  firstInitial: string;
 };
 type Person_Database_Record = {
   first_name: string;
@@ -52,6 +53,8 @@ let person = await ObjectMapper.map<Person, Person_Database_Record>(
     lastName: {
       map: (person) => person.last_name,
     },
+    // shorthand async syntax
+    firstInitial: (person) => person.firstName[0],
   }
 );
 ```
