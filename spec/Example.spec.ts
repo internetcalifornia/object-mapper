@@ -32,7 +32,7 @@ describe("Given Example in Readme.md", () => {
           dateOfBirth: {
             map: (person) => new Date(person.date_of_birth),
           },
-          // will not really be an age
+          // async mapping
           ageInYears: {
             asyncMap: (_person) =>
               new Promise<number>((resolve) => {
@@ -42,13 +42,14 @@ describe("Given Example in Readme.md", () => {
                 }, 300);
               }),
           },
+          // synchronous mapping
           firstName: {
             map: (person) => person.first_name,
           },
           lastName: {
             map: (person) => person.last_name,
           },
-          // shorthand async syntax
+          // shorthand sync syntax
           firstInitial: (person) => person.first_name[0],
         }
       );

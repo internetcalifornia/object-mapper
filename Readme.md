@@ -38,6 +38,7 @@ let person = await ObjectMapper.map<Person, Person_Database_Record>(
     dateOfBirth: {
       map: (person) => new Date(person.date_of_birth),
     },
+    // asynchronous mapping
     ageInYears: {
       asyncMap: (person) =>
         new Promise<number>((resolve) => {
@@ -47,14 +48,15 @@ let person = await ObjectMapper.map<Person, Person_Database_Record>(
           }, 300);
         }),
     },
+    // synchronous mapping
     firstName: {
       map: (person) => person.first_name,
     },
     lastName: {
       map: (person) => person.last_name,
     },
-    // shorthand async syntax
-    firstInitial: (person) => person.firstName[0],
+    // shorthand sync syntax
+    firstInitial: (person) => person.first_name[0],
   }
 );
 ```
