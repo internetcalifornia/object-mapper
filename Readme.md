@@ -4,7 +4,7 @@ A declarative way to map objects.
 
 ## Install
 
-`npm install @campfhir/object-mapper`
+`npm install @nems/object`
 
 ## Use
 
