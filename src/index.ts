@@ -6,7 +6,7 @@ import type {
   syncMap,
 } from "../typings";
 import { isMappingDefinitionSync } from "./utils/isTypes";
-export type { MappingDefinition } from "../typings";
+export type { MappingDefinition, MappingDefinitionSync } from "../typings";
 export { isMappingDefinition, isMappingDefinitionSync } from "./utils/isTypes";
 const log = debug("ObjectMapper");
 const errLog = log.extend("error");
