@@ -4,14 +4,14 @@ A declarative way to map objects.
 
 ## Install
 
-`npm install @campfhir/mapper`
+`npm install git+ssh://git@bitbucket.nems.org:7999/stu/simple-object-mapping.git`
 
 ## Use
 
 Given a object mapping definition and data it should return a new object.
 
 ```typescript
-import ObjectMapper from "@campfhir/mapper";
+import ObjectMapper from "@nems/mapper";
 
 type Person = {
   firstName: string;
