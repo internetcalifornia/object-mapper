@@ -1,5 +1,7 @@
-type syncMap<P, U> = (data: U) => P;
+type syncMap<P, U> = ((data: U) => P) | P;
 type asyncMap<P, U> = (data: U) => Promise<P>;
+
+const i: syncMap<string, boolean> = (s) => s;
 
 export type MappingDefinition<T extends object = any, U = any> = {
   [P in keyof T]:

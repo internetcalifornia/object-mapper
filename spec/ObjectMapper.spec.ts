@@ -6,9 +6,11 @@ import ObjectMapper from "../src";
 chai.use(chaiAsPromised);
 chai.should();
 
+console.log(process.env);
+
 describe("Given an object and a mapping definition", () => {
   const def: MappingDefinition<
-    { help: boolean; isOk: "1" | "2"; default: "yes" },
+    { help: boolean; isOk: "1" | "2"; default: "yes"; constantValue: string },
     {}
   > = {
     help: {
@@ -24,6 +26,7 @@ describe("Given an object and a mapping definition", () => {
       map: (data) => "2",
     },
     default: () => "yes",
+    constantValue: "TEMPORARY",
   };
 
   describe("When mapping function called", () => {
@@ -37,6 +40,8 @@ describe("Given an object and a mapping definition", () => {
       output.help.should.be.true;
       output.isOk.should.equal("2");
       output.default.should.equal("yes");
+      output.constantValue.should.be.a("string");
+      output.constantValue.should.equal("TEMPORARY");
     }).slow(9000);
   });
 });
@@ -89,33 +94,8 @@ describe("Given an object and a mapping definition where key is not defined corr
     it("Should throw an error", (done) => {
       const data = {};
       ObjectMapper.map(data, def)
-        .should.eventually.be.rejectedWith(
-          "badIdea does not have a defined mapping function. To fix set options.strict = false or define map or asyncMap function for it."
-        )
+        .should.eventually.be.rejectedWith("Not a proper definition")
         .notify(done);
-    }).slow(9000);
-  });
-});
-
-describe("Given an object and a mapping definition where key is not defined correctly", () => {
-  const def: MappingDefinition<{ help: boolean; isOk: "1" | "2" }, {}> = {
-    help: {
-      map: (_) => true,
-    },
-    isOk: {
-      map: (_) => "2",
-    },
-    // @ts-expect-error
-    badIdea: {},
-  };
-
-  describe("When mapping function called", () => {
-    it("Should throw an error", async () => {
-      const data = {};
-      let res = await ObjectMapper.map(data, def, { strict: false });
-
-      res.help.should.be.true;
-      res.isOk.should.equal("2");
     }).slow(9000);
   });
 });

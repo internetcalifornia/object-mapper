@@ -29,7 +29,9 @@ describe("Given an object", () => {
       d: {
         asyncMap: () => new Promise((resolve) => resolve(true)),
       },
-      c: () => 4,
+      c: {
+        RANDOM: true,
+      },
     };
     it("Should return false", () => {
       const res = isMappingDefinition(def);

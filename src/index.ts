@@ -1,47 +1,41 @@
-import { debug } from "debug";
 import type {
   asyncMap,
   MappingDefinition,
   MappingDefinitionSync,
   syncMap,
 } from "../typings";
-import { isMappingDefinitionSync } from "./utils/isTypes";
-export type { MappingDefinition, MappingDefinitionSync } from "../typings";
-export { isMappingDefinition, isMappingDefinitionSync } from "./utils/isTypes";
-const log = debug("ObjectMapper");
-const errLog = log.extend("error");
-const warnLog = log.extend("warn");
+import { isMappingDefinitionSync, isMappingDefinition, logger } from "./utils";
+
+const logError = logger.extend("error");
+const warn = logger.extend("warn");
 
 export abstract class ObjectMapper {
   static map<T extends object, P = any>(
     data: P,
-    definition: MappingDefinition<T, typeof data>,
-    options?: { strict?: boolean }
+    definition: MappingDefinition<T, typeof data>
   ): Promise<T>;
   static map<T extends object, P = any>(
     data: P,
     definition: MappingDefinition<T, typeof data>,
-    options?: { strict?: boolean; synchronous: false }
+    options?: { synchronous: false }
   ): Promise<T>;
   static map<T extends object, P = any>(
     data: P,
     definition: MappingDefinitionSync<T, typeof data>,
-    options?: { strict?: boolean; synchronous: true }
+    options?: { synchronous: true }
   ): T;
   static map<T extends object, P = any>(
     data: P,
-    definition: MappingDefinitionSync<T, typeof data>,
-    options?: { strict?: boolean }
+    definition: MappingDefinitionSync<T, typeof data>
   ): T;
   static map<T extends object, P = any>(
     data: P,
     definition:
       | MappingDefinition<T, typeof data>
       | MappingDefinitionSync<T, typeof data>,
-    options?: { strict?: boolean; synchronous?: boolean }
+    options?: { synchronous?: boolean }
   ): T | Promise<T> {
     const synchronous = options?.synchronous ?? false;
-
     if (synchronous || isMappingDefinitionSync(definition)) {
       const mappedObject: any = {};
       for (let [key, value] of Object.entries(definition)) {
@@ -51,7 +45,11 @@ export abstract class ObjectMapper {
       return mappedObject;
     }
     return new Promise(async (resolve, reject) => {
-      const strict = options?.strict ?? true;
+      if (!isMappingDefinition(definition)) {
+        reject("Not a proper definition");
+        return;
+      }
+
       const mappedObject: any = {};
       for (let [key, value] of Object.entries(definition) as [
         key: string,
@@ -61,15 +59,25 @@ export abstract class ObjectMapper {
           | { map: syncMap<any, typeof data>; asyncMap?: never }
           | { map?: never; asyncMap: asyncMap<any, typeof data> }
           | syncMap<any, typeof data>;
+
         if (typeof fn === "function") {
           mappedObject[key] = fn(data);
           continue;
         }
+        if (
+          typeof fn === "string" ||
+          typeof fn === "boolean" ||
+          typeof fn === "number"
+        ) {
+          mappedObject[key] = fn;
+          continue;
+        }
+
         if (typeof fn.asyncMap === "function") {
           try {
             const res = await fn.asyncMap(data);
             mappedObject[key] = res;
-            log("%s => ASYNC %O", key, res);
+            logger("%s => ASYNC %O", key, res);
             continue;
           } catch (err) {
             return reject(err);
@@ -77,23 +85,21 @@ export abstract class ObjectMapper {
         } else if (typeof fn.map === "function") {
           const res = fn.map(data);
           mappedObject[key] = res;
-          log("%s => %O", res);
+          logger("%s => %O", res);
           continue;
         } else {
-          if (strict) {
-            const errMsg = `${key} does not have a defined mapping function. To fix set options.strict = false or define map or asyncMap function for it.`;
-            errLog(errMsg);
-            return reject(errMsg);
-          }
-          warnLog("Key %s does not have a mapping function", key);
-          continue;
+          const errMsg = `${key} does not have a defined mapping function. To fix set options.strict = false or define map or asyncMap function for it.`;
+          logError(errMsg);
+          return reject(errMsg);
         }
       }
 
-      log("Resolved mapped object");
+      logger("Resolved mapped object");
       return resolve(mappedObject);
     });
   }
 }
 
+export type { MappingDefinition, MappingDefinitionSync } from "../typings";
+export { isMappingDefinition, isMappingDefinitionSync } from "./utils";
 export default ObjectMapper;
