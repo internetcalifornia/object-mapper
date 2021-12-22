@@ -8,7 +8,15 @@ chai.should();
 
 describe("Given an object and a mapping definition", () => {
   const def: MappingDefinition<
-    { help: boolean; isOk: "1" | "2"; default: "yes"; constantValue: string },
+    {
+      help: boolean;
+      isOk: "1" | "2";
+      default: "yes";
+      constantValue: "TIME_OUT";
+      complexValue: {
+        abc: "def";
+      };
+    },
     {}
   > = {
     help: {
@@ -21,10 +29,15 @@ describe("Given an object and a mapping definition", () => {
       },
     },
     isOk: {
-      map: (data) => "2",
+      map: (data) => "1",
     },
     default: () => "yes",
-    constantValue: "TEMPORARY",
+    constantValue: "TIME_OUT",
+    complexValue: () => {
+      return {
+        abc: "def",
+      };
+    },
   };
 
   describe("When mapping function called", () => {
