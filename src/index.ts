@@ -1,9 +1,4 @@
-import type {
-  asyncMap,
-  MappingDefinition,
-  MappingDefinitionSync,
-  syncMap,
-} from "../typings";
+import type { MappingDefinition, MappingDefinitionSync } from "../typings";
 import { isMappingDefinitionSync, isMappingDefinition, logger } from "./utils";
 
 const logError = logger.extend("error");
@@ -56,9 +51,9 @@ export abstract class ObjectMapper {
         value: any
       ]) {
         const fn = value as
-          | { map: syncMap<any, typeof data>; asyncMap?: never }
-          | { map?: never; asyncMap: asyncMap<any, typeof data> }
-          | syncMap<any, typeof data>;
+          | { map: (data: any) => any; asyncMap?: never }
+          | { map?: never; asyncMap: (data: any) => Promise<any> }
+          | ((data: any) => any);
 
         if (typeof fn === "function") {
           mappedObject[key] = fn(data);
