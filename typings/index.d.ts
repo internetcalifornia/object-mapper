@@ -5,9 +5,9 @@ const i: syncMap<string, boolean> = (s) => s;
 
 export type MappingDefinition<T extends object = any, U = any> = {
   [P in keyof T]:
-    | { map: syncMap<T[P], U>; asyncMap?: never }
+    | { map: (data: U) => P; asyncMap?: never }
     | { map?: never; asyncMap: asyncMap<T[P], U> }
-    | syncMap<T[P], U>;
+    | ((data: U) => P);
 };
 
 export type MappingFunc<T, U extends object> = (
