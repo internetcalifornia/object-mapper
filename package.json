@@ -16,7 +16,7 @@
     "debug": "^4.3.2"
   },
   "name": "@nems/mapper",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "main": "lib/index.js",
   "scripts": {
     "test": "nyc mocha",
