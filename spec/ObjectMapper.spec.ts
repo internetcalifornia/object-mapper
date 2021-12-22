@@ -16,6 +16,9 @@ describe("Given an object and a mapping definition", () => {
       complexValue: {
         abc: "def";
       };
+      complexValue2: {
+        abc: "def";
+      };
     },
     {}
   > = {
@@ -29,7 +32,7 @@ describe("Given an object and a mapping definition", () => {
       },
     },
     isOk: {
-      map: (data) => "1",
+      map: (data) => "2",
     },
     default: () => "yes",
     constantValue: "TIME_OUT",
@@ -37,6 +40,13 @@ describe("Given an object and a mapping definition", () => {
       return {
         abc: "def",
       };
+    },
+    complexValue2: {
+      map: () => {
+        return {
+          abc: "def",
+        };
+      },
     },
   };
 
@@ -52,7 +62,9 @@ describe("Given an object and a mapping definition", () => {
       output.isOk.should.equal("2");
       output.default.should.equal("yes");
       output.constantValue.should.be.a("string");
-      output.constantValue.should.equal("TEMPORARY");
+      output.constantValue.should.equal("TIME_OUT");
+      output.complexValue.abc.should.equal("def");
+      output.complexValue2.abc.should.equal("def");
     }).slow(9000);
   });
 });
