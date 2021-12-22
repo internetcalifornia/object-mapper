@@ -57,6 +57,10 @@ let person = await ObjectMapper.map<Person, Person_Database_Record>(
     },
     // shorthand sync syntax
     firstInitial: (person) => person.first_name[0],
+    // assign constant (string, boolean, number)
+    food: "pizza",
+    hoursOfSleepNeed: 8,
+    isCool: true,
   }
 );
 ```

@@ -6,8 +6,6 @@ import ObjectMapper from "../src";
 chai.use(chaiAsPromised);
 chai.should();
 
-console.log(process.env);
-
 describe("Given an object and a mapping definition", () => {
   const def: MappingDefinition<
     { help: boolean; isOk: "1" | "2"; default: "yes"; constantValue: string },
@@ -108,6 +106,10 @@ describe("Given a object definition and data", () => {
         lastName: string;
         ageInYears: number;
         dateOfBirth: Date;
+        // assign constant (string, boolean, number)
+        food: string;
+        hoursOfSleepNeed: number;
+        isCool: boolean;
       };
       type Person_Database_Record = {
         first_name: string;
@@ -142,6 +144,10 @@ describe("Given a object definition and data", () => {
           lastName: {
             map: (person) => person.last_name,
           },
+          // assign constant (string, boolean, number)
+          food: "pizza",
+          hoursOfSleepNeed: 8,
+          isCool: true,
         }
       );
       person.ageInYears.should.equal(0);
@@ -149,6 +155,9 @@ describe("Given a object definition and data", () => {
       person.firstName.should.equal("John");
       person.lastName.should.equal("Doe");
       person.dateOfBirth.should.be.a("Date");
+      person.food.should.equal("pizza");
+      person.hoursOfSleepNeed.should.equal(8);
+      person.isCool.should.be.true;
     });
   });
 });
