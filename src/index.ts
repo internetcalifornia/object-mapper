@@ -30,21 +30,24 @@ export abstract class ObjectMapper {
       | MappingDefinitionSync<T, typeof data>,
     options?: { synchronous?: boolean }
   ): T | Promise<T> {
-    const synchronous = options?.synchronous ?? false;
-    if (synchronous || isMappingDefinitionSync(definition)) {
-      const mappedObject: any = {};
-      for (let [key, value] of Object.entries(definition)) {
-        const fn = value as (data: P) => any;
-        mappedObject[key] = fn(data);
+    const synchronous = options?.synchronous;
+    if (!isMappingDefinition(definition)) {
+      return new Promise((_, reject) => {
+        reject("Not a proper definition");
+      });
+    }
+    if (synchronous !== false) {
+      // synchronous is explicitly true or undefined
+      if (synchronous == true || isMappingDefinitionSync(definition)) {
+        const mappedObject: any = {};
+        for (let [key, value] of Object.entries(definition)) {
+          const fn = value as (data: P) => any;
+          mappedObject[key] = fn(data);
+        }
+        return mappedObject;
       }
-      return mappedObject;
     }
     return new Promise(async (resolve, reject) => {
-      if (!isMappingDefinition(definition)) {
-        reject("Not a proper definition");
-        return;
-      }
-
       const mappedObject: any = {};
       for (let [key, value] of Object.entries(definition) as [
         key: string,
