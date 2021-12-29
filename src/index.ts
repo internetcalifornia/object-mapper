@@ -41,8 +41,22 @@ export abstract class ObjectMapper {
       if (synchronous == true || isMappingDefinitionSync(definition)) {
         const mappedObject: any = {};
         for (let [key, value] of Object.entries(definition)) {
-          const fn = value as (data: P) => any;
-          mappedObject[key] = fn(data);
+          if (
+            typeof value === "string" ||
+            typeof value === "boolean" ||
+            typeof value === "number"
+          ) {
+            mappedObject[key] = value;
+            continue;
+          }
+          const fn = value as ((data: P) => any) | { map: (data: P) => any };
+          if (typeof fn === "function") {
+            mappedObject[key] = fn(data);
+            continue;
+          }
+          console.log(key, typeof value);
+
+          mappedObject[key] = fn.map(data);
         }
         return mappedObject;
       }

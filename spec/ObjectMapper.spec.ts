@@ -6,6 +6,30 @@ import ObjectMapper from "../src";
 chai.use(chaiAsPromised);
 chai.should();
 
+describe("Given an object and a synchronous mapping definition", () => {
+  const data = {
+    fav_food: "pizza",
+    fav_drink: "soda",
+    is_cool: true,
+  };
+  const syncDef: MappingDefinitionSync<
+    { food: string; drink: string; cool: boolean },
+    typeof data
+  > = {
+    food: (data) => data.fav_food.toUpperCase(),
+    drink: "cola",
+    cool: false,
+  };
+  describe("When called to map object to target definition", () => {
+    it("Should return a proper object", () => {
+      const res = ObjectMapper.map(data, syncDef);
+      res.cool.should.be.false;
+      res.drink.should.equal("cola");
+      res.food.should.equal("PIZZA");
+    });
+  });
+});
+
 describe("Given an object and a mapping definition", () => {
   const def: MappingDefinition<
     {
