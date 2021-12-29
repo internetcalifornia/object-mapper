@@ -15,7 +15,7 @@
     "chai-as-promised": "^7.1.1",
     "debug": "^4.3.2"
   },
-  "name": "@nems/mapper",
+  "name": "@campfhir/mapper",
   "version": "2.0.13",
   "main": "lib/index.js",
   "scripts": {
