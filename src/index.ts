@@ -2,7 +2,6 @@ import type { MappingDefinition, MappingDefinitionSync } from "../typings";
 import { isMappingDefinitionSync, isMappingDefinition, logger } from "./utils";
 
 const logError = logger.extend("error");
-const warn = logger.extend("warn");
 
 export abstract class ObjectMapper {
   static map<T extends object, P = any>(
@@ -49,31 +48,36 @@ export abstract class ObjectMapper {
             mappedObject[key] = value;
             continue;
           }
-          const fn = value as ((data: P) => any) | { map: (data: P) => any };
+          const fn = value as
+            | ((data: P, context?: any) => any)
+            | { map: (data: P, context?: any) => any };
           if (typeof fn === "function") {
-            mappedObject[key] = fn(data);
+            mappedObject[key] = fn(data, mappedObject);
             continue;
           }
-          console.log(key, typeof value);
 
-          mappedObject[key] = fn.map(data);
+          mappedObject[key] = fn.map(data, mappedObject);
         }
         return mappedObject;
       }
     }
     return new Promise(async (resolve, reject) => {
       const mappedObject: any = {};
+
       for (let [key, value] of Object.entries(definition) as [
         key: string,
         value: any
       ]) {
         const fn = value as
-          | { map: (data: any) => any; asyncMap?: never }
-          | { map?: never; asyncMap: (data: any) => Promise<any> }
-          | ((data: any) => any);
+          | { map: (data: any, context?: any) => any; asyncMap?: never }
+          | {
+              map?: never;
+              asyncMap: (data: any, context?: any) => Promise<any>;
+            }
+          | ((data: any, context?: any) => any);
 
         if (typeof fn === "function") {
-          mappedObject[key] = fn(data);
+          mappedObject[key] = fn(data, mappedObject);
           continue;
         }
         if (
@@ -87,7 +91,7 @@ export abstract class ObjectMapper {
 
         if (typeof fn.asyncMap === "function") {
           try {
-            const res = await fn.asyncMap(data);
+            const res = await fn.asyncMap(data, context);
             mappedObject[key] = res;
             logger("%s => ASYNC %O", key, res);
             continue;
@@ -95,7 +99,7 @@ export abstract class ObjectMapper {
             return reject(err);
           }
         } else if (typeof fn.map === "function") {
-          const res = fn.map(data);
+          const res = fn.map(data, mappedObject);
           mappedObject[key] = res;
           logger("%s => %O", res);
           continue;

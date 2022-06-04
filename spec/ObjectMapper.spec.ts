@@ -297,3 +297,42 @@ describe("Given a definition and data", () => {
     });
   });
 });
+
+describe("Given a synchronous mapping definition", () => {
+  const data = { something: true, other: 4 };
+  const def: MappingDefinitionSync<
+    { flag: number; isSomething: boolean; yesOrNo: string; k: string[] },
+    typeof data
+  > = {
+    yesOrNo: (data, context) => (context?.flag !== undefined ? "no" : "yes"),
+    flag: () => 1,
+    isSomething: (_, context) => context?.flag === 1,
+    k: () => [],
+  };
+  describe("When applying map ", () => {
+    it("Then further defined maps functions have access mapping context", () => {
+      const output = ObjectMapper.map(data, def);
+      output.flag.should.be.equal(1);
+      output.isSomething.should.be.true;
+      output.yesOrNo.should.equal("yes");
+    });
+  });
+});
+
+describe("Given an asynchronous mapping definition", () => {
+  const data = { something: true, other: 4 };
+  const def: MappingDefinition<
+    { flag: number; isSomething: boolean },
+    typeof data
+  > = {
+    flag: { asyncMap: async () => 1 },
+    isSomething: (_, o) => o?.flag === 1,
+  };
+  describe("When applying map ", () => {
+    it("Then further defined maps functions have access mapping context", async () => {
+      const output = await ObjectMapper.map(data, def);
+      output.flag.should.be.equal(1);
+      output.isSomething.should.be.true;
+    });
+  });
+});
