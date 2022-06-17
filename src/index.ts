@@ -91,7 +91,7 @@ export abstract class ObjectMapper {
 
         if (typeof fn.asyncMap === "function") {
           try {
-            const res = await fn.asyncMap(data, context);
+            const res = await fn.asyncMap(data, mappedObject);
             mappedObject[key] = res;
             logger("%s => ASYNC %O", key, res);
             continue;
