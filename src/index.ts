@@ -1,121 +1,185 @@
-import type { MappingDefinition, MappingDefinitionSync } from "../typings";
-import { isMappingDefinitionSync, isMappingDefinition, logger } from "./utils";
-
-const logError = logger.extend("error");
+import type {
+  LoggingFunction,
+  MappingDefinition,
+  MappingDefinitionAsync,
+  MappingError,
+  Outcome,
+} from "../typings";
+import { isMappingDefinitionAsync } from "./utils";
 
 export abstract class ObjectMapper {
-  static map<T extends object, P = any>(
-    data: P,
-    definition: MappingDefinition<T, typeof data>
-  ): Promise<T>;
-  static map<T extends object, P = any>(
+  /**
+   * Synchronously map data according to rules/definition
+   *
+   * @param data to process
+   * @param definition rules for how to transform the data
+   * @param options.logger a simple logger function
+   * @default options.awaitEach false
+   */
+  static map<T extends object, P extends MappingDefinition>(
     data: P,
     definition: MappingDefinition<T, typeof data>,
-    options?: { synchronous: false }
-  ): Promise<T>;
-  static map<T extends object, P = any>(
+    options?: { logger?: LoggingFunction }
+  ): Outcome<T>;
+  /**
+   * Asynchronously map data according to rules/definition
+   *
+   * @param data to process
+   * @param definition rules for how to transform the data
+   * @param options.awaitEach should each async function await before moving onto the next key `only applies when async methods are defined in definition`
+   * @param options.logger a simple logger function
+   * @default options.awaitEach false
+   */
+  static map<T extends object, P extends MappingDefinitionAsync>(
     data: P,
-    definition: MappingDefinitionSync<T, typeof data>,
-    options?: { synchronous: true }
-  ): T;
-  static map<T extends object, P = any>(
-    data: P,
-    definition: MappingDefinitionSync<T, typeof data>
-  ): T;
-  static map<T extends object, P = any>(
+    definition: MappingDefinitionAsync<T, typeof data>,
+    options?: { awaitEach?: boolean; logger?: LoggingFunction }
+  ): Promise<Outcome<T>>;
+
+  static map<
+    T extends object,
+    P extends MappingDefinition | MappingDefinitionAsync
+  >(
     data: P,
     definition:
       | MappingDefinition<T, typeof data>
-      | MappingDefinitionSync<T, typeof data>,
-    options?: { synchronous?: boolean }
-  ): T | Promise<T> {
-    const synchronous = options?.synchronous;
-    if (!isMappingDefinition(definition)) {
-      return new Promise((_, reject) => {
-        reject("Not a proper definition");
+      | MappingDefinitionAsync<T, typeof data>,
+    options?: { awaitEach: boolean; logger?: LoggingFunction }
+  ): Outcome<T> | Promise<Outcome<T>> {
+    const logger = options?.logger ?? (() => {});
+    const mappedObject: any = {};
+    let isAsyncDefinition: boolean;
+    try {
+      logger("debug", "Determine if definition is async");
+      isAsyncDefinition = isMappingDefinitionAsync(definition);
+    } catch (err) {
+      logger("error", "Definition is not an object", {
+        err,
       });
+      const error = err as Error & {
+        issues: [key: string, error: unknown][];
+      };
+      error.issues = [];
+      return { ok: false, err: error };
     }
-    if (synchronous !== false) {
-      // synchronous is explicitly true or undefined
-      if (synchronous == true || isMappingDefinitionSync(definition)) {
-        const mappedObject: any = {};
-        for (let [key, value] of Object.entries(definition)) {
-          if (
-            typeof value === "string" ||
-            typeof value === "boolean" ||
-            typeof value === "number"
-          ) {
-            mappedObject[key] = value;
-            continue;
-          }
-          const fn = value as
-            | ((data: P, context?: any) => any)
-            | { map: (data: P, context?: any) => any };
-          if (typeof fn === "function") {
-            mappedObject[key] = fn(data, mappedObject);
-            continue;
-          }
-
-          mappedObject[key] = fn.map(data, mappedObject);
+    const errors: [key: string, err: unknown][] = [];
+    if (!isAsyncDefinition) {
+      logger("debug", "Definition is not async");
+      for (let [key, value] of Object.entries(definition)) {
+        if (typeof value !== "function") {
+          logger("debug", "Mapping via literal", { key });
+          mappedObject[key] = value;
+          logger("debug", "Mapped value", { key, value });
+          continue;
         }
-        return mappedObject;
+        logger("debug", "Mapping via function", { key });
+        const fn = value;
+        let val: any;
+        try {
+          val = fn(data, mappedObject);
+        } catch (err) {
+          errors.push([key, err]);
+          continue;
+        }
+        logger("debug", "Mapped value", { key, value: val });
+        mappedObject[key] = val;
+        continue;
       }
+      if (errors.length >= 1) {
+        const error = new Error("Failed to map results") as MappingError;
+        error.issues = errors;
+        logger("error", "Mapping was not successful", {
+          errorCount: errors.length,
+          issues: error.issues,
+        });
+        return { ok: false, err: error, partial: mappedObject };
+      }
+      logger("info", "successfully mapped");
+      return { ok: true, val: mappedObject };
     }
-    return new Promise(async (resolve, reject) => {
-      const mappedObject: any = {};
+    const awaitEach = options?.awaitEach ?? false;
+    awaitEach
+      ? logger("debug", "Awaiting each async function call")
+      : logger("debug", "Will resolve as Promise.allSettled");
+    const promised: Promise<unknown>[] = [];
 
-      for (let [key, value] of Object.entries(definition) as [
-        key: string,
-        value: any
-      ]) {
-        const fn = value as
-          | { map: (data: any, context?: any) => any; asyncMap?: never }
-          | {
-              map?: never;
-              asyncMap: (data: any, context?: any) => Promise<any>;
+    return new Promise(async (resolve) => {
+      for (let [key, value] of Object.entries(definition)) {
+        if (typeof value === "function") {
+          logger("debug", "Mapping via function call", { key });
+          const fn = value;
+          if (awaitEach) {
+            try {
+              logger("debug", "Awaiting function call", { key });
+              const val = await fn(data, mappedObject);
+              mappedObject[key] = val;
+              logger("debug", "Mapped value", { key, value: val });
+            } catch (err) {
+              logger("error", "Failed to map value due to error", { key, err });
+              errors.push([key, err as Error]);
             }
-          | ((data: any, context?: any) => any);
-
-        if (typeof fn === "function") {
-          mappedObject[key] = fn(data, mappedObject);
-          continue;
-        }
-        if (
-          typeof fn === "string" ||
-          typeof fn === "boolean" ||
-          typeof fn === "number"
-        ) {
-          mappedObject[key] = fn;
-          continue;
-        }
-
-        if (typeof fn.asyncMap === "function") {
-          try {
-            const res = await fn.asyncMap(data, mappedObject);
-            mappedObject[key] = res;
-            logger("%s => ASYNC %O", key, res);
             continue;
-          } catch (err) {
-            return reject(err);
           }
-        } else if (typeof fn.map === "function") {
-          const res = fn.map(data, mappedObject);
-          mappedObject[key] = res;
-          logger("%s => %O", res);
+          if (fn.constructor.name !== "AsyncFunction") {
+            logger("debug", "Synchronous function call mapping");
+            let val: any;
+            try {
+              val = fn(data, mappedObject);
+            } catch (err) {
+              errors.push([key, err]);
+              continue;
+            }
+            mappedObject[key] = val;
+            continue;
+          }
+          logger("debug", "Pushing promise into stack", { key });
+          const asyncFn = value as (...args: unknown[]) => Promise<any>;
+          promised.push(
+            new Promise<void>((resolve, reject) =>
+              asyncFn(data, mappedObject)
+                .then((result: unknown) => {
+                  mappedObject[key] = result;
+                  return resolve();
+                })
+                .catch((err: unknown) => {
+                  console.error(`Caught an error on ${key}`);
+                  errors.push([key, err]);
+                  return reject(err);
+                })
+            )
+          );
+          logger("debug", "moving on to next key");
           continue;
-        } else {
-          const errMsg = `${key} does not have a defined mapping function. To fix set options.strict = false or define map or asyncMap function for it.`;
-          logError(errMsg);
-          return reject(errMsg);
         }
+        logger("debug", "Mapping via literal");
+        const val = value;
+        mappedObject[key] = val;
+        logger("debug", "Mapped value", { key, value: val });
+      }
+      if (!awaitEach) {
+        logger("debug", "Resolved pushed promises");
+        await Promise.allSettled(promised);
       }
 
-      logger("Resolved mapped object");
-      return resolve(mappedObject);
+      if (errors.length >= 1) {
+        const error = new Error("Failed to map results") as MappingError;
+        error.issues = errors;
+        logger("error", "Mapping was not successful", {
+          errorCount: errors.length,
+          issues: error.issues,
+        });
+        return resolve({ ok: false, err: error });
+      }
+      logger("info", "successfully mapped");
+      return resolve({ ok: true, val: mappedObject });
     });
   }
 }
 
-export type { MappingDefinition, MappingDefinitionSync } from "../typings";
-export { isMappingDefinition, isMappingDefinitionSync } from "./utils";
+export type {
+  MappingDefinition,
+  MappingDefinitionAsync,
+  MappingError,
+} from "../typings";
+export { isMappingDefinitionAsync } from "./utils";
 export default ObjectMapper;

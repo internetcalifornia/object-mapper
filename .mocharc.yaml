@@ -6,3 +6,4 @@ require:
   - "ts-node/register"
   # - "dotenv/config"
 recursive: true
+timeout: 8000
