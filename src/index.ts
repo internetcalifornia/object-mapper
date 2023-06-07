@@ -76,7 +76,7 @@ export abstract class ObjectMapper {
         const fn = value;
         let val: any;
         try {
-          val = fn(data, mappedObject);
+          val = fn(data, mappedObject, errors);
         } catch (err) {
           errors.push([key, err]);
           continue;
@@ -111,7 +111,7 @@ export abstract class ObjectMapper {
           if (awaitEach) {
             try {
               logger("debug", "Awaiting function call", { key });
-              const val = await fn(data, mappedObject);
+              const val = await fn(data, mappedObject, errors);
               mappedObject[key] = val;
               logger("debug", "Mapped value", { key, value: val });
             } catch (err) {
@@ -124,7 +124,7 @@ export abstract class ObjectMapper {
             logger("debug", "Synchronous function call mapping");
             let val: any;
             try {
-              val = fn(data, mappedObject);
+              val = fn(data, mappedObject, errors);
             } catch (err) {
               errors.push([key, err]);
               continue;
@@ -136,7 +136,7 @@ export abstract class ObjectMapper {
           const asyncFn = value as (...args: unknown[]) => Promise<any>;
           promised.push(
             new Promise<void>((resolve, reject) =>
-              asyncFn(data, mappedObject)
+              asyncFn(data, mappedObject, errors)
                 .then((result: unknown) => {
                   mappedObject[key] = result;
                   return resolve();
