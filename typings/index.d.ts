@@ -1,5 +1,7 @@
 export type MappingDefinition<T = any, U = any> = {
-  [P in keyof T]: ((data: U, context: Partial<T>) => T[P]) | T[P];
+  [P in keyof T]:
+    | ((data: U, context: Partial<T>, errors: MappingErrorTuple) => T[P])
+    | T[P];
 };
 
 export type MappingDefinitionAsync<T = any, U = any> = {
@@ -8,14 +10,14 @@ export type MappingDefinitionAsync<T = any, U = any> = {
     | ((
         data: U,
         context: Partial<T>,
-        errors: MappingError["issues"]
+        errors: MappingErrorTuple
       ) => Promise<T[P]>);
 };
 
-export type MappingErrorTuple = [key: string, error: unknown][];
+export type MappingErrorTuple = [key: string, error: Error][];
 
 export type MappingError = Error & {
-  issues: ErrorMappingTuple;
+  issues: MappingErrorTuple;
 };
 
 export type Outcome<T = any> =

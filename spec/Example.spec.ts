@@ -1,6 +1,6 @@
-import ObjectMapper from "../src";
+import ObjectMapper, { MappingDefinitionAsync } from "../src";
 import "mocha";
-import chai from "chai";
+import chai, { expect } from "chai";
 
 chai.should();
 
@@ -173,6 +173,23 @@ describe("Given Example in Readme.md", () => {
       person.dateOfBirth.should.be.a("date");
     });
   });
+  describe("Mapping with Cloning", () => {
+    let arr = ["abc"];
+    const obj = { isActive: true };
+    const objOutcome = ObjectMapper.map(
+      {},
+      { myArr: arr, nonObjectLiteral: "987", myObj: obj },
+      { cloneObjectLiterals: true }
+    );
+    if (!objOutcome.ok) throw new Error("Failed test");
+    arr.push("123");
+    obj.isActive = false;
+    objOutcome.val.myArr.length.should.be.equal(1);
+    objOutcome.val.nonObjectLiteral.should.equal("987");
+    objOutcome.val.myObj.isActive.should.be.true;
+    obj.isActive.should.be.false;
+    arr.length.should.be.equal(2);
+  });
 });
 
 describe("Given some errors", () => {
@@ -259,6 +276,58 @@ describe("Given some errors", () => {
       if (outcome.ok) throw new Error("Failed test");
       outcome.err.message.should.be.a("string");
       outcome.err.issues.length.should.equal(1);
+    });
+  });
+  describe("Evaluating error results", () => {
+    it("Thrown Sync Method", () => {
+      // sync bad
+      const exp1 = ObjectMapper.map(
+        {},
+        {
+          a: "123",
+          b: () => {
+            throw new Error("Bad");
+          },
+        }
+      );
+      if (!exp1.ok) {
+        exp1.err;
+        // ^ instance of Error
+        const key = exp1.err.issues[0][0];
+        key.should.be.equal("b");
+        // ^ "b"
+        const message = exp1.err.issues[0][1].message;
+        message.should.be.equal("Bad");
+        expect(exp1.partial?.a).to.be.equal("123");
+      }
+    });
+    it("Thrown Async Method", async () => {
+      // sync bad
+      const exp1 = await ObjectMapper.map<{ a: string; b: string }>(
+        {},
+        {
+          a: "123",
+          b: async () => {
+            await new Promise<void>((resolve) =>
+              setTimeout(() => resolve(), 15)
+            );
+            throw new Error("Bad");
+          },
+        },
+        {
+          awaitEach: true,
+        }
+      );
+      if (!exp1.ok) {
+        exp1.err;
+        // ^ instance of Error
+        const key = exp1.err.issues[0][0];
+        key.should.be.equal("b");
+        // ^ "b"
+        const message = exp1.err.issues[0][1].message;
+        message.should.be.equal("Bad");
+        expect(exp1.partial?.a).to.be.equal("123");
+      }
     });
   });
 });
